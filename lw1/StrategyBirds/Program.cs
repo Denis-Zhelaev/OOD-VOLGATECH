@@ -1,121 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-
-public interface IFlyBehavior
-{
-    void Fly();
-}
-
-public interface IQuackBehavior
-{
-    void Quack();
-}
-
-public interface ISwimBehavior
-{
-    void Swim();
-}
-
-public class SimpleFly : IFlyBehavior
-{
-    public void Fly()
-    {
-        Console.WriteLine("летит в небе");
-    }
-}
-
-public class CanNotFly : IFlyBehavior
-{
-    public void Fly()
-    {
-        Console.WriteLine("не умеет летать:(");
-    }
-}
-
-public class SimpleQuack : IQuackBehavior
-{
-    public void Quack()
-    {
-        Console.WriteLine("крякает: Кря-кря!");
-    }
-}
-
-public class CanNotQuack : IQuackBehavior
-{
-    public void Quack()
-    {
-        Console.WriteLine("не умеет крякать:(");
-    }
-}
-
-public class SimpleSwim : ISwimBehavior
-{
-    public void Swim()
-    {
-        Console.WriteLine("плывет по воде");
-    }
-}
-
-public class CanNotSwim : ISwimBehavior
-{
-    public void Swim()
-    {
-        Console.WriteLine("Птичка не умеет плавать:(");
-    }
-}
-
-public abstract class Bird
-{
-    protected IFlyBehavior flyBehavior;
-    protected IQuackBehavior quackBehavior;
-    protected ISwimBehavior swimBehavior;
-
-    public string Name { get; set; }
-
-    public void PerformFly()
-    {
-        Console.Write(Name + " ");
-        flyBehavior.Fly();
-    }
-
-    public void PerformQuack()
-    {
-        Console.Write(Name + " ");
-        quackBehavior.Quack();
-    }
-
-    public void PerformSwim()
-    {
-        Console.Write(Name + " ");
-        swimBehavior.Swim();
-    }
-}
-
-public class Duck : Bird
-{
-    public Duck(string name)
-    {
-        Name = name;
-        flyBehavior = new SimpleFly();
-        quackBehavior = new SimpleQuack();
-        swimBehavior = new SimpleSwim();
-    }
-}
-
-public class Pinguin : Bird
-{
-    public Pinguin(string name)
-    {
-        Name = name;
-        flyBehavior = new CanNotFly();
-        quackBehavior = new SimpleQuack();
-        swimBehavior = new SimpleSwim();
-    }
-}
+using StrategyBirds.Behaviors;
+using StrategyBirds.Birds;
 
 class Program
 {
-    static List<Bird> birds = new List<Bird>();
+    static List<IBird> birds = new List<IBird>();
 
     static void Main(string[] args)
     {
@@ -138,7 +28,7 @@ class Program
                     CreateBird();
                     break;
                 case "2":
-                    MakeAllBirdsQuack();
+                    MakeAllBirdsMakeSound();
                     break;
                 case "3":
                     MakeAllBirdsFly();
@@ -159,17 +49,17 @@ class Program
     {
         Console.WriteLine("\nНазовите свою птичку ");
         string birdName = Console.ReadLine();
-        if (string.IsNullOrWhiteSpace(birdName)) { birdName = "Неизввестная птичка"; }
-        ;
-
+        if (string.IsNullOrWhiteSpace(birdName)) { birdName = "Неизввестная птичка" + birds.Count + 1; }; //немного нумерации чтобы было легче ориентироваться
+        
         Console.WriteLine("\nКакой вид у вашей птички?");
         Console.WriteLine("1 - Создать утку");
         Console.WriteLine("2 - Создать пингвина");
+        Console.WriteLine("3 - Создать реактивную уточку");
         Console.WriteLine("0 - Выход");
         Console.Write("Выберите действие: ");
 
         var choice = Console.ReadLine();
-
+        Console.Clear();
         switch (choice)
         {
             case "1":
@@ -177,6 +67,9 @@ class Program
                 break;
             case "2":
                 birds.Add(new Pinguin(birdName));
+                break;
+            case "3":
+                birds.Add(new ReactiveDuck(birdName));
                 break;
             case "0":
                 return;
@@ -186,7 +79,7 @@ class Program
         }
     }
 
-    static void MakeAllBirdsQuack()
+    static void MakeAllBirdsMakeSound()
     {
         if (birds.Count == 0)
         {
@@ -196,7 +89,7 @@ class Program
 
         foreach (var bird in birds)
         {
-            bird.PerformQuack();
+            bird.PerformSound();
         }
     }
 
