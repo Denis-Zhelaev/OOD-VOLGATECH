@@ -18,7 +18,6 @@ namespace SharpsStrategy.Shapes
 
     public abstract class IShape
     {
-        protected IGetToString ToStringBehavior;
         protected ICountPerimetr CountPerimetrBehavior;
         protected ICountArea CountAreaBehavior;
         protected List<Point> Points;
@@ -32,9 +31,9 @@ namespace SharpsStrategy.Shapes
             Points = new List<Point>(shapePoints);
         }
 
-        public string performToString()
+        public virtual string performToString()
         {
-            return ToStringBehavior.GetToString(Points);
+            return "переопределить метод";
         }
 
         public float performPerimetr()

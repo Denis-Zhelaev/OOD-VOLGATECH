@@ -1,24 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using SFML.Graphics;
+﻿using SFML.Graphics;
 using SharpsStrategy.Shapes;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 /*
 Напишите программу, работающую с фигурами
 Программа должна уметь рассчитывать площадь и периметр,
 а так же выводить данные о фигурах.
-Для реализации функционала используйте паттерн "стратегия"
+Для реализации функционала используйте паттерн "стратегия".
 
 Был написан на С# в целях ознакомления с синтаксисом. 
  */
 
 class Program
 {
-    static List<IShape> shapes = new List<IShape>(); 
+    static List<IShape> shapes = new List<IShape>();
 
     static void Main()
     {
+        //добавил пару фигур для демонстрации
+        shapes.Add(new Rectangle(new List<Point> { new Point(0, 0), new Point(1, 1) }));
+        shapes.Add(new Triangle(new List<Point> { new Point(0, 0), new Point(1, 0), new Point(0.5f, 1) }));
+
         int indexOfShape = 0;
+
         while (true)
         {
             Console.WriteLine("Сколько фигур сейчас существует: " + shapes.Count);

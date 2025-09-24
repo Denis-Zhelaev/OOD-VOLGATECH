@@ -81,7 +81,6 @@
     <Compile Include="Behaviors\IBehavior.cs" />
     <Compile Include="Behaviors\CountPerimetrBehavior.cs" />
     <Compile Include="Behaviors\CountAreaBehavior.cs" />
-    <Compile Include="Behaviors\ToStringBehavior.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Shapes\IShape.cs" />

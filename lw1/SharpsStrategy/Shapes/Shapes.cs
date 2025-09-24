@@ -12,9 +12,13 @@ namespace SharpsStrategy.Shapes
             {
                 throw new ArgumentException("Треугольник должен иметь три точки");
             }
-            ToStringBehavior = new TriangleToString();
             CountPerimetrBehavior = new TriangleCountPerimetr();
             CountAreaBehavior = new TriangleCountArea();
+        }
+
+        public override string performToString()
+        {
+            return "треугольник";
         }
     }
 
@@ -26,9 +30,12 @@ namespace SharpsStrategy.Shapes
             {
                 throw new ArgumentException("Прямоугольник должен иметь две точки");
             }
-            ToStringBehavior = new RectangleToString();
             CountPerimetrBehavior = new RectangleCountPerimetr();
             CountAreaBehavior = new RectangleCountArea();
+        }
+        public override string performToString()
+        {
+            return "прямоугольник";
         }
     }
 
