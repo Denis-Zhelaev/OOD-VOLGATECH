@@ -80,6 +80,7 @@
   <ItemGroup>
     <Compile Include="AddClasses\MeteoStation.cs" />
     <Compile Include="AddClasses\Sensor.cs" />
+    <Compile Include="AddClasses\Weather.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

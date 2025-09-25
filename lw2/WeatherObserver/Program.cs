@@ -13,8 +13,8 @@ using SFML.Window;
 Добавьте возможность для метеостанции отписаться от определенных уведомлений.
 
 Сделал каркас программы, далее
-1. сделаю визуальную часть зависимой от внутреннего состояния
-2. подпишу метеостанции на события из треда с консолью
+1. сделаю визуальную часть зависимой от внутреннего состояния 
+2. подпишу метеостанции на события из треда с консолью - создал доп класс погоды, который будет хранить состояние погоды и уведомлять станции
 3. задам возможность выбирать подписки для метеостанции
 4. доработаю класс метеостанции чтобы при отсутствии подписки индикатор визуально отображал, 
 что не следит за изменениями.
@@ -29,8 +29,9 @@ namespace MeteoStation
         private static Thread consoleThread;
         private static bool isRunning = true;
         private static object lockObject = new object();
-
         private static bool closeRequested = false;
+
+        private static Weather weather = new Weather();
 
         private const int MAX_STATIONS = 6;
         private const int COLUMNS = 3;
@@ -39,7 +40,7 @@ namespace MeteoStation
 
         static void Main(string[] args)
         {
-            window = new RenderWindow(new VideoMode(1200, 800), "Meteo Stations");
+            window = new RenderWindow(new VideoMode(1200, 600), "Meteo Stations");
 
             window.Closed += (s, e) =>
             {
@@ -58,7 +59,7 @@ namespace MeteoStation
                 }
             };
 
-            stations[0] = new MeteoStation(0, 0);
+            stations[0] = new MeteoStation(0, 0, weather);
             stationsCount = 1;
 
             consoleThread = new Thread(ConsoleWorker);
@@ -68,8 +69,7 @@ namespace MeteoStation
             {
                 window.DispatchEvents();
 
-                if (closeRequested)
-                    break;
+                if (closeRequested) { break; }
 
                 window.Clear(Color.White);
 
@@ -82,15 +82,13 @@ namespace MeteoStation
                 }
 
                 window.Display();
-
                 Thread.Sleep(10);
             }
 
             isRunning = false;
-
             if (!consoleThread.Join(1000))
             {
-                consoleThread.Interrupt(); 
+                consoleThread.Interrupt();
             }
 
             if (window.IsOpen)
@@ -101,6 +99,8 @@ namespace MeteoStation
 
         private static void ConsoleWorker()
         {
+            PrintHelp();
+            Console.WriteLine();
             while (isRunning)
             {
                 try
@@ -111,54 +111,7 @@ namespace MeteoStation
 
                         lock (lockObject)
                         {
-                            if (input == "add")
-                            {
-                                if (stationsCount < MAX_STATIONS)
-                                {
-                                    int row = stationsCount / COLUMNS;
-                                    int col = stationsCount % COLUMNS;
-                                    float x = col * STATION_WIDTH;
-                                    float y = row * STATION_HEIGHT;
-
-                                    stations[stationsCount] = new MeteoStation(x, y);
-                                    stationsCount++;
-
-                                    Console.WriteLine($"Добавлена станция. Всего станций: {stationsCount}/{MAX_STATIONS}");
-                                }
-                                else
-                                {
-                                    Console.WriteLine($"Достигнут лимит в {MAX_STATIONS} станций.");
-                                }
-                            }
-                            else if (input == "remove")
-                            {
-                                if (stationsCount > 0)
-                                {
-                                    stationsCount--;
-                                    stations[stationsCount] = null;
-                                    Console.WriteLine($"Удалена станция. Всего станций: {stationsCount}/{MAX_STATIONS}");
-                                }
-                                else
-                                {
-                                    Console.WriteLine("Нет станций для удаления.");
-                                }
-                            }
-                            else if (input == "exit" || input == "quit")
-                            {
-                                Console.WriteLine("Завершение работы...");
-                                closeRequested = true;
-                                isRunning = false;
-                                break; 
-                            }
-                            else if (input == "clear")
-                            {
-                                Console.Clear();
-                                Console.WriteLine("Консоль очищена. Доступные команды: add, remove, exit, clear");
-                            }
-                            else if (!string.IsNullOrEmpty(input))
-                            {
-                                Console.WriteLine("Неизвестная команда. Доступные команды: add, remove, exit, clear");
-                            }
+                            ProcessCommand(input);
                         }
                     }
                     else
@@ -172,9 +125,163 @@ namespace MeteoStation
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Ошибка в консольном потоке: {ex.Message}");
-                    break;
+                    Console.WriteLine($"Ошибка: {ex.Message}");
                 }
+            }
+        }
+
+        private static void PrintHelp()
+        {
+            Console.WriteLine("Доступные команды:");
+            Console.WriteLine("  help - показать команды");
+            Console.WriteLine("  add - добавить метеостанцию");
+            Console.WriteLine("  remove - удалить метеостанцию");
+            Console.WriteLine("  weather.temp [значение] - установить температуру (-100 до 100)");
+            Console.WriteLine("  weather.press [значение] - установить давление (0 до 2000)");
+            Console.WriteLine("  weather.wind.velos [значение] - установить скорость ветра (0 до 100)");
+            Console.WriteLine("  weather.wind.dir [значение] - установить направление ветра (0-360)");
+            Console.WriteLine("  weather.check - показать текущее состояние погоды");
+            Console.WriteLine("  clear - очистить консоль");
+            Console.WriteLine("  exit - выход из программы");
+        }
+
+        private static void ProcessCommand(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return;
+
+            string[] parts = input.Split(' ');
+            string command = parts[0].ToLower();
+
+            switch (command)
+            {
+                case "help":
+                    PrintHelp();
+                    break;
+
+                case "add":
+                    AddStation();
+                    break;
+
+                case "remove":
+                    RemoveStation();
+                    break;
+
+                case "weather.temp":
+                    if (parts.Length > 1 && float.TryParse(parts[1], out float temp))
+                    {
+                        try
+                        {
+                            weather.Temperature = temp;
+                        }
+                        catch (ArgumentOutOfRangeException ex)
+                        {
+                            Console.WriteLine($"Ошибка: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Использование: weather.temp [значение]");
+                    }
+                    break;
+
+                case "weather.press":
+                    if (parts.Length > 1 && float.TryParse(parts[1], out float press))
+                    {
+                        try
+                        {
+                            weather.Pressure = press;
+                        }
+                        catch (ArgumentOutOfRangeException ex)
+                        {
+                            Console.WriteLine($"Ошибка: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Использование: weather.press [значение]");
+                    }
+                    break;
+
+                case "weather.wind.velos":
+                    if (parts.Length > 1 && float.TryParse(parts[1], out float speed))
+                    {
+                        try
+                        {
+                            weather.WindSpeed = speed;
+                        }
+                        catch (ArgumentOutOfRangeException ex)
+                        {
+                            Console.WriteLine($"Ошибка: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Использование: weather.wind.velos [значение]");
+                    }
+                    break;
+
+                case "weather.wind.dir":
+                    if (parts.Length > 1 && float.TryParse(parts[1], out float dir))
+                    {
+                        weather.WindDirection = dir;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Использование: weather.wind.dir [значение]");
+                    }
+                    break;
+
+                case "weather.check":
+                    Console.WriteLine("Текущее состояние погоды:");
+                    Console.WriteLine(weather.ToString());
+                    break;
+
+                case "exit":
+                    Console.WriteLine("Завершение работы...");
+                    closeRequested = true;
+                    isRunning = false;
+                    break;
+
+                case "clear":
+                    Console.Clear();
+                    break;
+
+                default:
+                    Console.WriteLine("Неизвестная команда. Введите 'help' для списка команд.");
+                    break;
+            }
+        }
+        private static void AddStation()
+        {
+            if (stationsCount < MAX_STATIONS)
+            {
+                int row = stationsCount / COLUMNS;
+                int col = stationsCount % COLUMNS;
+                float x = col * STATION_WIDTH;
+                float y = row * STATION_HEIGHT;
+
+                stations[stationsCount] = new MeteoStation(x, y, weather);
+                stationsCount++;
+
+                Console.WriteLine($"Добавлена станция. Всего станций: {stationsCount}/{MAX_STATIONS}");
+            }
+            else
+            {
+                Console.WriteLine($"Достигнут лимит в {MAX_STATIONS} станций.");
+            }
+        }
+
+        private static void RemoveStation()
+        {
+            if (stationsCount > 0)
+            {
+                stationsCount--;
+                stations[stationsCount] = null;
+                Console.WriteLine($"Удалена станция. Всего станций: {stationsCount}/{MAX_STATIONS}");
+            }
+            else
+            {
+                Console.WriteLine("Нет станций для удаления.");
             }
         }
     }
