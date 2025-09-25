@@ -1,12 +1,13 @@
 ﻿using SFML.Graphics;
 using SFML.System;
+using System;
 
 namespace MeteoStation
 {
     abstract class Sensor
     {
         protected RectangleShape body;
-        protected float mainValue; //главное значение для датчика
+        protected float mainValue;
 
         public Sensor()
         {
@@ -38,17 +39,51 @@ namespace MeteoStation
         }
     }
 
-    abstract class ColumnSensor : Sensor
+    class ColumnSensor : Sensor
     {
-        protected RectangleShape scaleBackground; 
-        protected RectangleShape valueColumn;     
+        private RectangleShape scaleBackground;
+        private RectangleShape valueColumn;
+        private float minValue;
+        private float maxValue;
+        private Color columnColor;
 
-        public ColumnSensor()
+        private const float SCALE_HEIGHT = 80f;
+
+        public ColumnSensor(float minVal = -10f, float maxVal = 10f, Color color = default)
         {
-            scaleBackground = new RectangleShape(new Vector2f(20, 80));
-            scaleBackground.FillColor = Color.Black;
+            minValue = minVal;
+            maxValue = maxVal;
+            columnColor = color == default ? Color.Blue : color;
 
-            valueColumn = new RectangleShape(new Vector2f(15, 40));
+            scaleBackground = new RectangleShape(new Vector2f(20, SCALE_HEIGHT));
+            scaleBackground.FillColor = new Color(200, 200, 200);
+
+            valueColumn = new RectangleShape(new Vector2f(15, 0));
+            valueColumn.FillColor = columnColor;
+        }
+
+        public override void UpdateValue(float value)
+        {
+            mainValue = value;
+            UpdateColumnVisual();
+        }
+
+        private void UpdateColumnVisual()
+        {
+            float normalizedValue = (mainValue - minValue) / (maxValue - minValue);
+            float columnHeight = normalizedValue * SCALE_HEIGHT;
+
+            columnHeight = Math.Max(0, Math.Min(SCALE_HEIGHT, columnHeight));
+            valueColumn.Size = new Vector2f(15, columnHeight);
+
+            Vector2f bodyPos = body.Position;
+            if (bodyPos.X != 0 || bodyPos.Y != 0) 
+            {
+                valueColumn.Position = new Vector2f(
+                    bodyPos.X + 77.5f,
+                    bodyPos.Y + 20 + (SCALE_HEIGHT - columnHeight)
+                );
+            }
         }
 
         public override void Draw(RenderWindow window)
@@ -57,26 +92,9 @@ namespace MeteoStation
 
             Vector2f bodyPos = body.Position;
             scaleBackground.Position = new Vector2f(bodyPos.X + 75, bodyPos.Y + 20);
-            valueColumn.Position = new Vector2f(bodyPos.X + 77.5f, bodyPos.Y + 60); 
 
             window.Draw(scaleBackground);
             window.Draw(valueColumn);
-        }
-    }
-
-    class TemperatureSensor : ColumnSensor
-    {
-        public TemperatureSensor()
-        {
-            valueColumn.FillColor = Color.Blue;
-        }
-    }
-
-    class PressureSensor : ColumnSensor
-    {
-        public PressureSensor()
-        {
-            valueColumn.FillColor = Color.Red;
         }
     }
 
@@ -87,16 +105,20 @@ namespace MeteoStation
 
         public WindSpeedSensor()
         {
-            font = new Font("arial.ttf"); 
-            valueText = new Text("0", font, 20);
+            font = new Font("arial.ttf");
+            valueText = new Text("0.0", font, 20);
             valueText.FillColor = Color.Black;
+        }
+
+        public override void UpdateValue(float value)
+        {
+            mainValue = value;
+            valueText.DisplayedString = value.ToString("F1");
         }
 
         public override void Draw(RenderWindow window)
         {
             base.Draw(window);
-
-            valueText.DisplayedString = mainValue.ToString("F1");
 
             FloatRect textBounds = valueText.GetLocalBounds();
             Vector2f bodyPos = body.Position;
@@ -112,12 +134,32 @@ namespace MeteoStation
     class WindDirectionSensor : Sensor
     {
         private RectangleShape directionArrow;
+        private ConvexShape arrowHead;
+        private Text directionText;
+        private Font font;
 
         public WindDirectionSensor()
         {
-            directionArrow = new RectangleShape(new Vector2f(60, 4));
+            directionArrow = new RectangleShape(new Vector2f(30, 3));
             directionArrow.FillColor = Color.Black;
-            directionArrow.Origin = new Vector2f(0, 2);
+            directionArrow.Origin = new Vector2f(0, 1.5f);
+
+            arrowHead = new ConvexShape(3);
+            arrowHead.SetPoint(0, new Vector2f(0, 0));
+            arrowHead.SetPoint(1, new Vector2f(10, -5));
+            arrowHead.SetPoint(2, new Vector2f(10, 5));
+            arrowHead.FillColor = Color.Black;
+            arrowHead.Origin = new Vector2f(0, 0);
+
+            font = new Font("arial.ttf");
+            directionText = new Text("0°", font, 16);
+            directionText.FillColor = Color.Black;
+        }
+
+        public override void UpdateValue(float value)
+        {
+            mainValue = value;
+            directionText.DisplayedString = $"{value:F0}°";
         }
 
         public override void Draw(RenderWindow window)
@@ -125,14 +167,37 @@ namespace MeteoStation
             base.Draw(window);
 
             Vector2f bodyPos = body.Position;
-            directionArrow.Position = new Vector2f(
+            Vector2f center = new Vector2f(
                 bodyPos.X + body.Size.X / 2,
                 bodyPos.Y + body.Size.Y / 2
             );
 
-            directionArrow.Rotation = mainValue;
+            float rotationAngle = mainValue - 90;
+
+            directionArrow.Position = center;
+            directionArrow.Rotation = rotationAngle;
+
+            float arrowLength = 30;
+            float triangleOffset = 5;
+
+            float angleRad = rotationAngle * (float)Math.PI / 180f;
+            Vector2f arrowEnd = new Vector2f(
+                center.X + (arrowLength + triangleOffset) * (float)Math.Cos(angleRad),
+                center.Y + (arrowLength + triangleOffset) * (float)Math.Sin(angleRad)
+            );
+
+            arrowHead.Position = arrowEnd;
+            arrowHead.Rotation = rotationAngle + 180;
+
+            FloatRect textBounds = directionText.GetLocalBounds();
+            directionText.Position = new Vector2f(
+                bodyPos.X + (body.Size.X - textBounds.Width) / 2,
+                bodyPos.Y + body.Size.Y - 25
+            );
 
             window.Draw(directionArrow);
+            window.Draw(arrowHead);
+            window.Draw(directionText);
         }
     }
 }

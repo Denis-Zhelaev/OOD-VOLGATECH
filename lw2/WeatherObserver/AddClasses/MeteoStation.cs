@@ -20,9 +20,8 @@ namespace MeteoStation
             body.OutlineColor = Color.Black;
             body.OutlineThickness = 2f;
 
-            // Создаем сенсоры и подписываемся на события погоды
-            var tempSensor = new TemperatureSensor();
-            var pressSensor = new PressureSensor();
+            var tempSensor = new ColumnSensor(-50f, 50f, Color.Red);
+            var pressSensor = new ColumnSensor(0f, 1000f, Color.Green);
             var windSpeedSensor = new WindSpeedSensor();
             var windDirSensor = new WindDirectionSensor();
 
@@ -30,6 +29,8 @@ namespace MeteoStation
             sensors.Add(pressSensor);
             sensors.Add(windSpeedSensor);
             sensors.Add(windDirSensor);
+
+            PositionSensors(x, y);
 
             weather.TemperatureChanged += tempSensor.UpdateValue;
             weather.PressureChanged += pressSensor.UpdateValue;
@@ -41,10 +42,8 @@ namespace MeteoStation
             windSpeedSensor.UpdateValue(weather.WindSpeed);
             windDirSensor.UpdateValue(weather.WindDirection);
 
-            PositionSensors(x, y);
         }
 
-        // Остальные методы без изменений
         private void PositionSensors(float baseX, float baseY)
         {
             for (int i = 0; i < sensors.Count && i < 4; i++)
