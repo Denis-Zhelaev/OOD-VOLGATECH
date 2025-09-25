@@ -6,7 +6,7 @@ namespace MeteoStation
     abstract class Sensor
     {
         protected RectangleShape body;
-        protected float mainValue; 
+        protected float mainValue; //главное значение для датчика
 
         public Sensor()
         {
@@ -14,6 +14,11 @@ namespace MeteoStation
             body.FillColor = Color.White;
             body.OutlineColor = Color.Black;
             body.OutlineThickness = 2f;
+        }
+
+        public virtual void UpdateValue(float value)
+        {
+            mainValue = value;
         }
 
         public void SetPosition(float x, float y)
